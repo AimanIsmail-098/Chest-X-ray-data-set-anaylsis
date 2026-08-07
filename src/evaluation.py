@@ -1,34 +1,74 @@
 import tensorflow as tf
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
+import numpy as np
 
-# -----------------------------
-# Load Trained Model
-# -----------------------------
-model = load_model("pneumonia_cnn.keras")
+# ==========================
+# Paths
+# ==========================
 
-print("Model loaded successfully!")
+TEST_DIR = "dataset"
 
-# -----------------------------
-# Load Test Dataset
-# -----------------------------
-test_path = "Testing"
+CNN_MODEL = "models/pneumonia_cnn.keras"
+MOBILENET_MODEL = "models/mobilenet_model.keras"
+RESNET_MODEL = "models/resnet_model.keras"
 
-test_datagen = ImageDataGenerator(rescale=1./255)
+# ==========================
+# Dataset
+# ==========================
 
-test_generator = test_datagen.flow_from_directory(
-    test_path,
-    target_size=(224, 224),
-    batch_size=32,
-    class_mode='binary',
+IMG_SIZE = (224, 224)
+BATCH_SIZE = 32
+
+test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(
+    rescale=1./255
+)
+
+test_data = test_datagen.flow_from_directory(
+    TEST_DIR,
+    target_size=IMG_SIZE,
+    batch_size=BATCH_SIZE,
+    class_mode="binary",
     shuffle=False
 )
 
-# -----------------------------
-# Evaluate Model
-# -----------------------------
-test_loss, test_accuracy = model.evaluate(test_generator)
+print("Classes:", test_data.class_indices)
 
-print("\n========== MODEL EVALUATION ==========")
-print(f"Test Loss     : {test_loss:.4f}")
-print(f"Test Accuracy : {test_accuracy*100:.2f}%")
+# ==========================
+# Evaluation Function
+# ==========================
+
+def evaluate_model(model_path, model_name):
+
+    print("\n===================================")
+    print(f"Evaluating: {model_name}")
+    print("===================================")
+
+    model = tf.keras.models.load_model(model_path)
+
+    results = model.evaluate(test_data, verbose=1)
+
+    print()
+
+    for name, value in zip(model.metrics_names, results):
+        print(f"{name}: {value:.4f}")
+
+# ==========================
+# CNN
+# ==========================
+
+evaluate_model(CNN_MODEL, "CNN")
+
+# ==========================
+# MobileNetV2
+# ==========================
+
+evaluate_model(MOBILENET_MODEL, "MobileNetV2")
+
+# ==========================
+# ResNet50
+# ==========================
+
+evaluate_model(RESNET_MODEL, "ResNet50")
+
+print("\n===================================")
+print("All Models Evaluated Successfully")
+print("===================================")
